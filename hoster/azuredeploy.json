@@ -1,0 +1,250 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.27.1.19265",
+      "templateHash": "611530618706053611"
+    }
+  },
+  "parameters": {
+    "dnsZoneName": {
+      "type": "string",
+      "metadata": {
+        "description": "Public DNS zone used for the DNS records"
+      }
+    },
+    "competitionName": {
+      "type": "string",
+      "metadata": {
+        "description": "Competition name that is used in resource names"
+      }
+    },
+    "deplLocation": {
+      "type": "string",
+      "defaultValue": "swedencentral",
+      "metadata": {
+        "description": "Deployment region"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "competitionName": "[parameters('competitionName')]",
+        "sourceRepository": "https://github.com/mmaraa/taitaja2024"
+      },
+      "metadata": {
+        "description": "Tags used for all resources"
+      }
+    }
+  },
+  "variables": {
+    "rgName": "[format('rg-{0}-hoster-prod-001', parameters('competitionName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('rgName')]",
+      "tags": "[parameters('tags')]",
+      "location": "[parameters('deplLocation')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "infra",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "dnsZoneName": {
+            "value": "[parameters('dnsZoneName')]"
+          },
+          "competitionName": {
+            "value": "[parameters('competitionName')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "deplLocation": {
+            "value": "[parameters('deplLocation')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.27.1.19265",
+              "templateHash": "3618469789057230162"
+            }
+          },
+          "parameters": {
+            "dnsZoneName": {
+              "type": "string",
+              "metadata": {
+                "description": "Public DNS zone used for the DNS records"
+              }
+            },
+            "competitionName": {
+              "type": "string",
+              "metadata": {
+                "description": "Competition name that is used in resource names"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "metadata": {
+                "description": "Tags used for all resources"
+              }
+            },
+            "deplLocation": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for all resources"
+              }
+            }
+          },
+          "variables": {
+            "$fxv#0": "$ErrorActionPreference = 'Stop'\r\n$storageAccount = Get-AzStorageAccount -ResourceGroupName $env:ResourceGroupName -AccountName $env:StorageAccountName\r\n\r\n# Enable the static website feature on the storage account.\r\n$ctx = $storageAccount.Context\r\nEnable-AzStorageStaticWebsite -Context $ctx -IndexDocument $env:IndexDocumentPath -ErrorDocument404Path $env:ErrorDocument404Path\r\n\r\n# Add the two HTML pages.\r\n$tempIndexFile = New-TemporaryFile\r\nSet-Content $tempIndexFile $env:IndexDocumentContents -Force\r\nSet-AzStorageBlobContent -Context $ctx -Container '$web' -File $tempIndexFile -Blob $env:IndexDocumentPath -Properties @{'ContentType' = 'text/html'} -Force\r\n\r\n$tempErrorDocument404File = New-TemporaryFile\r\nSet-Content $tempErrorDocument404File $env:ErrorDocument404Contents -Force\r\nSet-AzStorageBlobContent -Context $ctx -Container '$web' -File $tempErrorDocument404File -Blob $env:ErrorDocument404Path -Properties @{'ContentType' = 'text/html'} -Force\r\n\r\n# Upoload site to storage account\r\nInvoke-WebRequest -Uri \"https://raw.githubusercontent.com/mmaraa/taitaja2024/main/hoster/temp_site.zip\" -OutFile \"temp_site.zip\"\r\nSet-AzStorageBlobContent -Context $ctx -Container '$web' -File \"temp_site.zip\" -Blob \"temp_site.zip\" -Properties @{'ContentType' = 'application/x-zip-compressed'} -Force",
+            "saLongName": "[format('sa{0}{1}', parameters('competitionName'), uniqueString(resourceGroup().id))]",
+            "saName": "[substring(variables('saLongName'), 0, 24)]",
+            "indexFile": "index.html",
+            "errorFile": "404.html"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[variables('saName')]",
+              "location": "[parameters('deplLocation')]",
+              "kind": "StorageV2",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "tags": "[parameters('tags')]"
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', variables('saName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[format('id-{0}', parameters('competitionName'))]",
+              "location": "[parameters('deplLocation')]",
+              "tags": "[parameters('tags')]"
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-04-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('saName'))]",
+              "name": "[guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName'))), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab'), resourceId('Microsoft.Storage/storageAccounts', variables('saName')))]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName')))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2023-08-01",
+              "name": "[format('deploymentScript-{0}', parameters('competitionName'))]",
+              "location": "[parameters('deplLocation')]",
+              "tags": "[parameters('tags')]",
+              "kind": "AzurePowerShell",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName'))))]": {}
+                }
+              },
+              "properties": {
+                "azPowerShellVersion": "3.0",
+                "scriptContent": "[variables('$fxv#0')]",
+                "retentionInterval": "PT4H",
+                "environmentVariables": [
+                  {
+                    "name": "ResourceGroupName",
+                    "value": "[resourceGroup().name]"
+                  },
+                  {
+                    "name": "StorageAccountName",
+                    "value": "[variables('saName')]"
+                  },
+                  {
+                    "name": "IndexDocumentPath",
+                    "value": "[variables('indexFile')]"
+                  },
+                  {
+                    "name": "IndexDocumentContents",
+                    "value": "[format('Hoster website for competition: {0}', parameters('competitionName'))]"
+                  },
+                  {
+                    "name": "ErrorDocument404Path",
+                    "value": "[variables('errorFile')]"
+                  },
+                  {
+                    "name": "ErrorDocument404Contents",
+                    "value": "[format('Hoster error file for competition: {0}', parameters('competitionName'))]"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName')))]",
+                "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', variables('saName')), 'Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}', parameters('competitionName'))), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab'), resourceId('Microsoft.Storage/storageAccounts', variables('saName'))))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/dnsZones",
+              "apiVersion": "2023-07-01-preview",
+              "name": "[parameters('dnsZoneName')]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "zoneType": "Public"
+              }
+            }
+          ],
+          "outputs": {
+            "saWebSiteUrl": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('saName')), '2023-01-01').primaryEndpoints.web]"
+            },
+            "dnsZoneResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/dnsZones', parameters('dnsZoneName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('rgName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "websiteUrl": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'infra'), '2022-09-01').outputs.saWebSiteUrl.value]"
+    },
+    "dnsZoneResourceId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'infra'), '2022-09-01').outputs.dnsZoneResourceId.value]"
+    }
+  }
+}
