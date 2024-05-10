@@ -17,16 +17,17 @@ param tags object = {
   sourceRepository: 'https://github.com/mmaraa/taitaja2024'
 }
 
+@description('The index of the user')
+param userIndex int
+
 //VARIABLES
-var userPrefix = split(userPrincipalName, '@')[0]
-var userIndex = split(userPrefix, '-')[1]
 var rootDnsZoneName = split(rootDnsZoneId, '/')[8]
 var rootDnsZoneResourceGroup = split(rootDnsZoneId, '/')[4]
 
 //RESOURCES
 
 resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' = {
-  name: '${userIndex}.${rootDnsZoneName}'
+  name: 'c${userIndex}.${rootDnsZoneName}'
   location: 'Global'
   tags: tags
 }

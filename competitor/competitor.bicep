@@ -7,6 +7,9 @@ param userPrincipalName string
 @description('User objectId')
 param userObjectId string
 
+@description('User index')
+param userIndex int
+
 @description('The location of the resource group')
 param deplLocation string = 'swedencentral'
 
@@ -41,5 +44,6 @@ module competitorInfra 'competitor-infra.bicep' = {
     userPrincipalName: userPrincipalName
     userObjectId: userObjectId
     tags: tags
+    userIndex: userIndex
   }
 }

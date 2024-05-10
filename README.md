@@ -4,11 +4,13 @@ This repository contains necessary files to deploy the [test project's](205_Tait
 
 ## Pre-requirements
 - Azure subscription with owner permissions
+- Permissions to create user accounts to Entra ID tenant (if using competitor user account creator script)
 - Open AI Service whitelisting from Microsoft (https://aka.ms/oai/access)
-- Public DNS name that can be used on hoster side
+- Public DNS name that can be used on hoster side and you have access to set name servers on this zone in domain's registrar service
+- Az.* PowerShell Modules installed to your machine
 
 ## Installation steps
-1. Run hoster side deployment. Remember to take output variables for website hostin *temp_site.zip* and root dns zone resource id
+1. Run hoster side deployment. Remember to note output variables for website hosting *temp_site.zip* and root dns zone resource id
 2. Create csv file by creating user accounts with a script or manually gathering UPN's and objectId's. If using script to create user accounts, password of account are stored also in csv-file.
 3. Run competitor infrastructure creation script
 
@@ -18,7 +20,6 @@ Hoster side contains
 
 - Public DNS Zone
 - Storage account to provide necessary files for web page
-- [Instructions](hoster_instructions.pdf) how to complete hoster side deployment after deployment
 
 ### Deploy hoster
 
@@ -26,20 +27,59 @@ To deploy hoster side Azure resources, click the button below and fill necessary
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fdev.azure.com%2Forgname%2Fprojectname%2F_apis%2Fgit%2Frepositories%2Freponame%2Fitems%3FscopePath%3D%2freponame%2fazuredeploy.json%26api-version%3D6.0)
 
+After you have deployed resources, find your DNS name servers under DNS zone resource and modify your domain registrar settings to point to newly created DNS zone.
+
+![DNS zone nameservers](images/dnsNameServers.png)
+
+### Modifications to test project
+
+Instead of using https://kupla.eu/test_site.zip for students, replace the *websiteUrl*-output value to the test project e.g. https://sataitaja24tesasjsfx2lo7.z1.web.core.windows.net/test_site.zip.
 
 ## Competitor
 
 Competitor side contains:
 
-- Script, which creates necessary user accounts for competitors. You can also create this manually.
-- Resource group for given number of competitors
+- Script, which creates necessary user accounts for competitors. You can also create this file manually (check Deploy competitor below).
+- Resource groups for given number of competitors including role assignments
 - DNS zone for each competitor and ns-records to root dns-zone
 - PowerShell-script that should be migrated towards the cloud in test project (source server not included)
-- [Instructions](competitor_instructions.pdf) how to complete competitor side deployment
 
 ### Deploy competitor
 
-To deploy competitor side Azure resources, create CSV-file and create infrastructure by script **Create-CompetitionInfrastructure.ps1**.
+To deploy competitor side Azure resources, create CSV-file manually or by running **Create-CompetitionUserAccounts.ps1**. CSV Headers that you need are:
+
+```csv
+UserPrincipalName,ObjectId
+```
+
+If you are using the **Create-CompetitionUserAccounts.ps1**-script, you must give two parameters. 
+
+|Parameter|Type|Description|
+|---------|----|-----------|
+|countOfCompetitors|integer|Count of competitors to create|
+|tenantDomainName|string|Public domain name that you have added to your Entra ID tenant. You can use also domain ending .onmicrosoft.com|
+
+#### Example
+
+```powershell
+.\Create-CompetitorUserAccounts.ps1 -countOfCompetitors 10 -tenantDomainName "kupla.eu"
+```
+
+After you have user account CSV available, you can continue to run competitor side deployment by running **Create-CompetitionInfrastructure.ps1** script. Check parameters for modifications.
+
+|Parameter|Type|Mandatory|Default|Description|
+|---------|----|-----------|---|---|
+|csvPath|string|true|-|Path to user csv-file|
+|deploymentLocation|string|false|swedencentral|Deployment region for resources|
+|competitionName|string|true|-|Used to name resource groups|
+|rootDnsZoneId|string|true|-|Hoster root DNS zone resourceId|
+|targetSubscriptionId|string|true|-|ID of subscription where you want to deploy competitor resource groups|
+
+#### Example
+
+```powershell
+.\Create-CompetitionInfrastructure.ps1 -csvPath ".\competitorUserAccounts.csv" -competitionName "taitaja2024" -rootDnsZoneId "/subscriptions/c95e8492-4f56-48ce-a609-8b312638e773/resourceGroups/rg-taitaja2024-hoster-prod-001/providers/Microsoft.Network/dnszones/kupla.eu" -targetSubscriptionId "c95e8492-4f56-48ce-a609-8b312638e773"
+```
 
 ## Contribution
 

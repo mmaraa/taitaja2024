@@ -1,7 +1,27 @@
-# Set the error action preference to stop the script on the first error.
-#$ErrorActionPreference = 'Stop'
+<#
+.SYNOPSIS
+    This script creates user accounts for competitors in a Microsoft 365 tenant.
 
-# Input parameters 
+.DESCRIPTION
+    The script connects to a Microsoft 365 tenant using the Microsoft Graph API and creates a specified number of user accounts for competitors. 
+    It generates a random password for each user and sets the user's properties such as UserPrincipalName, DisplayName, GivenName, and MailNickname. 
+    The script also creates a CSV file that contains the UserPrincipalName, ObjectId, and Password for each created user.
+
+.PARAMETER countOfCompetitors
+    The number of competitor user accounts to create.
+
+.PARAMETER tenantDomainName
+    The domain name of the Microsoft 365 tenant where the user accounts will be created.
+
+.EXAMPLE
+    .\Create-CompetitorUserAccounts.ps1 -countOfCompetitors 10 -tenantDomainName "example.com"
+
+.NOTES
+    The script requires the 'User.ReadWrite.All', 'Group.ReadWrite.All', 'Directory.AccessAsUser.All', and 'PrivilegedAccess.ReadWrite.AzureADGroup' permissions in Microsoft Graph.
+    The script uses the Microsoft Graph PowerShell SDK to interact with Microsoft 365.
+#>
+
+#Input parameters 
 param (
     [Parameter(Mandatory = $true)]
     [int]$countOfCompetitors,
