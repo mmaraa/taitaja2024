@@ -25,7 +25,7 @@ Hoster side contains
 
 To deploy hoster side Azure resources, click the button below and fill necessary parameter values.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fdev.azure.com%2Forgname%2Fprojectname%2F_apis%2Fgit%2Frepositories%2Freponame%2Fitems%3FscopePath%3D%2freponame%2fazuredeploy.json%26api-version%3D6.0)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmmaraa%2Ftaitaja2024%2Fmain%2Fhoster%2Fazuredeploy.json)
 
 After you have deployed resources, find your DNS name servers under DNS zone resource and modify your domain registrar settings to point to newly created DNS zone.
 
