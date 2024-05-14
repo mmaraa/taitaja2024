@@ -74,6 +74,7 @@ After you have user account CSV available, you can continue to run competitor si
 |competitionName|string|true|-|Used to name resource groups|
 |rootDnsZoneId|string|true|-|Hoster root DNS zone resourceId|
 |targetSubscriptionId|string|true|-|ID of subscription where you want to deploy competitor resource groups|
+|villeUserObjectId|string|true|-|Object ID for user Ville who needs privileges to Windows Admin Center|
 
 #### Example
 

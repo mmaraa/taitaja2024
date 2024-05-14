@@ -20,9 +20,13 @@ param tags object = {
 @description('The index of the user')
 param userIndex int
 
+@description('Object Id of the Ville-user who needs privileges to Windows Admin Center')
+param villeUserObjectId string
+
 //VARIABLES
 var rootDnsZoneName = split(rootDnsZoneId, '/')[8]
 var rootDnsZoneResourceGroup = split(rootDnsZoneId, '/')[4]
+var windowsAdminCenterRoleId = 'a6333a3e-0164-44c3-b281-7a577aff287f'
 
 //RESOURCES
 
@@ -32,7 +36,7 @@ resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' = {
   tags: tags
 }
 
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource roleAssignmentContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(subscription().subscriptionId, 'roleAssignment', userObjectId)
   properties: {
     roleDefinitionId: subscriptionResourceId(
@@ -41,6 +45,20 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     ) //Role definition id for Contributor
     principalId: userObjectId
     principalType: 'User'
+  }
+}
+
+resource roleAssignmentRestrictedUAA 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(subscription().subscriptionId, 'roleAssignment', userObjectId, windowsAdminCenterRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9'
+    ) //Role definition id for UAA
+    principalId: userObjectId
+    principalType: 'User'
+    condition: '((!(ActionMatches{\'Microsoft.Authorization/roleAssignments/write\'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${windowsAdminCenterRoleId}} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAnyValues:GuidEquals {${villeUserObjectId}, ${userObjectId}})) AND ((!(ActionMatches{\'Microsoft.Authorization/roleAssignments/delete\'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${windowsAdminCenterRoleId}} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAnyValues:GuidEquals {${villeUserObjectId}, ${userObjectId}}) )'
+    conditionVersion: '2.0'
   }
 }
 

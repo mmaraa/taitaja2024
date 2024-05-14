@@ -40,7 +40,9 @@ param (
     [Parameter(Mandatory = $true)]
     [string]$rootDnsZoneId,
     [Parameter(Mandatory = $true)]
-    [string]$targetSubscriptionId
+    [string]$targetSubscriptionId,
+    [Parameter(Mandatory = $true)]
+    [string]$villeUserObjectId
 )
 
 # Connect to Azure for deployment
@@ -61,7 +63,7 @@ $userIndex=1
 try {
     foreach($competitor in $competitorUserAccounts) {
         try {
-            New-AzDeployment -Location $deploymentLocation -TemplateFile ".\competitor.bicep" -UserPrincipalName $competitor.UserPrincipalName -userObjectId $competitor.ObjectId -competitionName $competitionName -rootDnsZoneId $rootDnsZoneId -deplLocation $deploymentLocation -userIndex $userIndex
+            New-AzDeployment -Location $deploymentLocation -TemplateFile ".\competitor.bicep" -UserPrincipalName $competitor.UserPrincipalName -userObjectId $competitor.ObjectId -competitionName $competitionName -rootDnsZoneId $rootDnsZoneId -deplLocation $deploymentLocation -userIndex $userIndex -villeUserObjectId $villeUserObjectId
             $userIndex++
         }
         catch {

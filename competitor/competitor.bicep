@@ -25,6 +25,9 @@ param tags object = {
   sourceRepository: 'https://github.com/mmaraa/taitaja2024'
 }
 
+@description('Object Id of the Ville-user who needs privileges to Windows Admin Center')
+param villeUserObjectId string
+
 //VARIABLES
 var userPrefix = split(userPrincipalName, '@')[0]
 
@@ -45,5 +48,6 @@ module competitorInfra 'competitor-infra.bicep' = {
     userObjectId: userObjectId
     tags: tags
     userIndex: userIndex
+    villeUserObjectId: villeUserObjectId
   }
 }
