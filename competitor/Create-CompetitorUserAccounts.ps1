@@ -58,11 +58,11 @@ try {
                 ForceChangePasswordNextSignIn = $false
             }
             $user = New-MgUser `
-                -UserPrincipalName "competitor-c$i@$TenantDomainName" `
-                -DisplayName "Competitor c$i" `
-                -GivenName "Competitor c$i" `
+                -UserPrincipalName "competitor-k$i@$TenantDomainName" `
+                -DisplayName "Competitor k$i" `
+                -GivenName "Competitor k$i" `
                 -PasswordProfile $PasswordProfile `
-                -MailNickname "competitorc$i" `
+                -MailNickname "competitork$i" `
                 -AccountEnabled
 
             $csvUser = "$($user.UserPrincipalName),$($user.Id),$pass"
@@ -71,7 +71,7 @@ try {
 
         }
         catch {
-            throw "Failed to create user account: competitor-c$i."
+            throw "Failed to create user account: competitor-k$i."
         }
         
     }
