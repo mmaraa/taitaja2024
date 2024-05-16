@@ -32,20 +32,20 @@ foreach ($competitor in $competitors) {
     $SFTPAccount = Get-AzStorageAccount -resourceGroup $($competitor.resourcegroup) -StorageAccountName $($competitor).sftpaccount -ErrorAction SilentlyContinue | Select-Object StorageAccountName, ResourceGroupName, EnableSftp
 
     if ($SFTPAccount.EnableSftp) {
-        Write-Output "$($Competitor.Name): B1.1 - SFTP is enabled"
+        Write-Output "$($Competitor.Name): B1.1 - 1 - SFTP is enabled"
     }
     else {
-
+        Write-Output "$($Competitor.Name): B1.1 - 0"
     }
 
     # B1.2
     $SFTPUser = Get-AzStorageLocalUser -resourceGroup $($competitor.resourcegroup) -StorageAccountName $($competitor).sftpaccount -ErrorAction SilentlyContinue | Select-Object Name, HasSshPassword
 
     if ($SFTPUser.Name -eq 'sftpintegpalkkalaskenta' -and $SFTPUser.HasSshPassword) {
-        Write-Output "$($Competitor.Name): B1.2 - SFTP user sftpintegpalkkalaskenta created and has SSH password"
+        Write-Output "$($Competitor.Name): B1.2 - 1 - SFTP user sftpintegpalkkalaskenta created and has SSH password"
     }
     else {
-
+        Write-Output "$($Competitor.Name): B1.2 - 0"
     }
 
     # B1.3
@@ -54,16 +54,15 @@ foreach ($competitor in $competitors) {
     $SFTPSession = New-SFTPSession -Credential $SFTPCredential -HostName $ConnectionEndpoint -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
 
     if ($SFTPSession) {
-        Write-Output "$($Competitor.Name): B1.3 - SFTP connection to $ConnectionEndpoint successful"
+        Write-Output "$($Competitor.Name): B1.3 - 1 - SFTP connection to $ConnectionEndpoint successful"
         $null = Remove-SFTPSession $SFTPSession
     }
     else {
-
+        Write-Output "$($Competitor.Name): B1.3 - 0"
     }
 
     # B2
 
-  
     # TODO: CHANGE DNS!
     $DNSName = "kuplakone.c$($competitor.number).tuulet.in"
     $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue
@@ -74,16 +73,18 @@ foreach ($competitor in $competitors) {
         $StorageProperties = Get-AzStorageServiceProperty -ServiceType blob -Context $StorageCtx -ErrorAction SilentlyContinue 
 
         if ($StorageProperties.StaticWebsite.Enabled) {
-            Write-Output "$($Competitor.Name): B2.1 - DNS entry kuplakone.c$($competitor.number).tuulet.in points to storage account $StorageAccountName and has static website enabled."
+            Write-Output "$($Competitor.Name): B2.1 - 1 - DNS entry kuplakone.c$($competitor.number).tuulet.in points to storage account $StorageAccountName and has static website enabled."
         }
         else {
+            Write-Output "$($Competitor.Name): B2.1 - 0"
         }
         # B2.2
         $Website = Invoke-WebRequest -Uri "http://$($DNSName)" -ErrorAction SilentlyContinue
         if ($Website.Content -like '*<title>Kuplakone Maintenance</title>*') {
-            Write-Output "$($Competitor.Name): B2.2 - Website kuplakone.c$($competitor.number).tuulet.in is reachable and displays maintenance page."
+            Write-Output "$($Competitor.Name): B2.2 - 1 - Website kuplakone.c$($competitor.number).tuulet.in is reachable and displays maintenance page."
         }
         else {
+            Write-Output "$($Competitor.Name): B2.2 - 0"
         }
     }
     else {
