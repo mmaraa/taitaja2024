@@ -50,7 +50,7 @@ try {
     foreach ($i in 1..$countOfCompetitors) {
         try {
 
-            $pass = -join ((30..122) | Get-Random -Count 12 | ForEach-Object { [char]$_ })
+            $pass = -join ((45..122) | Get-Random -Count 12 | ForEach-Object { [char]$_ })
             
 
             $PasswordProfile = @{
