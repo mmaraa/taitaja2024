@@ -12,6 +12,8 @@ param (
 
 # Requires POSH SSH module
 
+# CSV Schema
+# name,resourcegroup,sftpaccount,sftppassword
 
 $competitors = Import-Csv $csvPath
 
