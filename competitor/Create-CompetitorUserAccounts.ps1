@@ -71,7 +71,7 @@ try {
 
         }
         catch {
-            throw "Failed to create user account: competitor-c$i."
+            throw "Failed to create user account: competitor-k$i."
         }
         
     }
