@@ -31,7 +31,7 @@ var windowsAdminCenterRoleId = 'a6333a3e-0164-44c3-b281-7a577aff287f'
 //RESOURCES
 
 resource dnsZone 'Microsoft.Network/dnsZones@2023-07-01-preview' = {
-  name: 'c${userIndex}.${rootDnsZoneName}'
+  name: 'k${userIndex}.${rootDnsZoneName}'
   location: 'Global'
   tags: tags
 }
