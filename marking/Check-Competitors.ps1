@@ -25,7 +25,7 @@ if (-not (Get-AzContext)) {
 }
 
 # switch to correct subscription
-$context = Set-AzContext -SubscriptionId $subscriptionId
+Set-AzContext -SubscriptionId $subscriptionId
 
 foreach ($competitor in $competitors) {
     # B1.1
@@ -90,6 +90,61 @@ foreach ($competitor in $competitors) {
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0"
         Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
+    }
+
+    # B3
+
+    # B3.1
+    $ArcMachine = Get-AzConnectedMachine -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue | Select-Object ResourceGroupName, Name, Status
+
+    if ($ArcMachine.Status -eq 'Connected') {
+        Write-Host -BackgroundColor Green "$($Competitor.Name): B3.1 - 1 - Azure Arc machine $($ArcMachine.Name) is connected"
+    }
+    else {
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.1 - 0"
+    }
+
+    # B3.2
+    $AutomationAccount = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue
+    $ContentMatch = $false
+    $ScheduleMatch = $false
+
+    if ($AutomationAccount) {
+        $AutomationRunbook = Get-AzAutomationRunbook -ResourceGroupName $($competitor.resourcegroup) -AutomationAccount $AutomationAccount.AutomationAccountName -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'AzureAutomationTutorialWithIdentity*' -and $_.State -like 'Published' } | Select-Object Name, State
+
+        if ($AutomationRunbook) {
+            foreach ($Runbook in $AutomationRunbook) {
+                $null = New-Item -Path "\work\marking\$($competitor.Name)" -ItemType Directory -Force -ErrorAction SilentlyContinue
+                $null = Export-AzAutomationRunbook -ResourceGroupName $($competitor.resourcegroup) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Runbook.Name -Slot 'Published' -OutputFolder "\work\marking\$($competitor.Name)\" -Force -ErrorAction SilentlyContinue
+                # Check if file contains string
+                if ($(Get-Content -Path "\work\marking\$($competitor.name)\$($Runbook.Name).ps1") -like 'Remove-Item -Path c:\temp\* -Force') {
+                    $ContentMatch = $true
+                    $Schedule = Get-AzAutomationScheduledRunbook -ResourceGroupName $($competitor.resourcegroup) -AutomationAccountName $AutomationAccount.AutomationAccountName -RunbookName $Runbook.Name -ErrorAction SilentlyContinue
+                    $ScheduleDetails = Get-AzAutomationSchedule -ResourceGroupName $($competitor.resourcegroup) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Schedule.ScheduleName -ErrorAction SilentlyContinue 
+                    if (($ScheduleDetails.WeeklyScheduleOptions.DaysOfWeek -contains 'Monday') -and ($ScheduleDetails.Frequency -eq 'week') -and ($ScheduleDetails.NextRun.TimeOfDay -eq '04:00:00')) {
+                        $ScheduleMatch = $true
+                    }
+                    else {
+                    }
+                }
+            }
+            if ($ContentMatch) {
+                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains Remove-Item -Path c:\temp\* -Force"
+            }
+            else {
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
+            }
+            if ($ScheduleMatch) {
+                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.3 - 1 - Runbook $($Runbook.Name) is scheduled to run on Mondays at 04:00"
+            }
+            else {
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
+            }
+        }
+        else {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
+        }
     }
 
 }   
