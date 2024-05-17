@@ -22,7 +22,7 @@
     The ID of the Azure subscription where the infrastructure will be deployed.
 
 .EXAMPLE
-    .\Create-CompetitionInfrastructure.ps1 -csvPath "competitors.csv" -competitionName "CodeChallenge" -rootDnsZoneId "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/rg-taitaja2024-hoster-prod-001/providers/Microsoft.Network/dnszones/example.com" -targetSubscriptionId "12345678-1234-1234-1234-123456789012"
+    .\Create-CompetitionInfrastructure.ps1 -csvPath "competitors.csv" -competitionName "CodeChallenge" -rootDnsZoneId "/subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/rg-taitaja2024-hoster-prod-001/providers/Microsoft.Network/dnszones/example.com" -targetSubscriptionId "12345678-1234-1234-1234-123456789012" -villeUserObjectId "11111111-2222-3333-4444-55555555555"
 
 .NOTES
     The script requires the 'Microsoft.Azure.PowerShell.Cmdlets.ResourceManager' module and the 'Az.Accounts' module.

@@ -1,6 +1,6 @@
 # Taitaja 2024 - Skill 205 - IT Specialist
 
-This repository contains necessary files to deploy the [test project's](205_Taitaja2024_Pilvipalvelut_Finaali.pdf) hoster and competitor preparation infrastructure to Azure. 
+This repository contains necessary files to deploy the [test project's](205_Taitaja2024_Pilvipalvelut_Finaali.pdf) hoster and competitor preparation infrastructure to Azure. Use a single subscription for all resources.
 
 ## Pre-requirements
 - Azure subscription with owner permissions
