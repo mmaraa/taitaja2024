@@ -197,8 +197,9 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
     }
 
-
     # TODO B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 points - CHECK AUTOMATION FUNCTIONALITY!"
+    
 
     # B4 Azure valvonta
 
