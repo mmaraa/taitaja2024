@@ -182,7 +182,7 @@ foreach ($competitor in $competitors) {
     # Manual check in email
     $LogMonitorRules = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType microsoft.insights/scheduledqueryrules
     if ($LogMonitorRules) {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - Log Search alert rule present. CREATE ALERT AND CHECK EMAIL!"
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - 1 point - Log Search alert rule present. CREATE ALERT AND CHECK EMAIL!"
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B4.1 - 0"
@@ -194,7 +194,7 @@ foreach ($competitor in $competitors) {
         $ArcExtensions = Get-AzConnectedMachineExtension -MachineName $ArcMachine.Name -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
     }
     if ($ArcExtensions.Name -contains 'AzureMonitorWindowsAgent' -and $ArcExtensions.Name -contains 'DependencyAgentWindows') {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.2 -   - Dependency Agent extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.2 -   - 1 points - Dependency Agent extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B4.2 - 0"
@@ -203,7 +203,7 @@ foreach ($competitor in $competitors) {
     # B5 Moderni hallinta
     # B5.1 Windows Admin Center asennettu ja toimii Villellä - Ville pääsee kirjautumaan sisään WAC:iin
     if ($ArcExtensions.Name -contains 'AdminCenter') {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - 1 point - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0"
@@ -211,14 +211,33 @@ foreach ($competitor in $competitors) {
 
     # B6 Tekoäly				
     # B6.1 Open AI Service asennettu - Palvelu asennettu ja hubi luotu
-    $AIService = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'microsoft.cognitiveservices/accounts'
-    $AIHub = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'Microsoft.MachineLearningServices/workspaces'
+    $AIServices = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'microsoft.cognitiveservices/accounts'
+    $AIHubs = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'Microsoft.MachineLearningServices/workspaces'
 
-    if ($AIService -and $AIHub) {
+    if ($AIServices -and $AIHubs) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B6.1 - 1 - AI Service and AI Hub are present"
     
         # B6.2 Mallit asennettu käytettäväksi - GPT ja Text embedding malli deployattu
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.2 -   - CHECK CORRECT MODELS. 0,5 point per model!"
+        $deployments = @()
+        foreach ($AIService in $AIServices) {
+            $AIDeploymentsUri = $AIService.ResourceId + '/deployments?api-version=2023-05-01'
+            $deployments = ((Invoke-AzRestMethod -Path $AIDeploymentsUri -Method GET).Content | ConvertFrom-Json).value
+        }
+        $b62Points = 0
+        foreach ($deployment in $deployments) {
+            if ($deployment.properties.model.name -eq 'gpt-4' -or $deployment.properties.model.name -eq 'text-embedding-ada-002') {
+                $b62Points += 0.5
+            }
+        }
+
+        if ($b62Points -gt 1) { $b62Points = 1 }
+
+        if ($b62Points -eq 0) {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0"
+        }
+        else {    
+            Write-Host -BackgroundColor Green "$($Competitor.Name): B6.2 - $b62Points - Models deployed"
+        }
 
         # B6.3 AI Search deplyattu - AI Search löytyy
         $AISearch = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'Microsoft.Search/searchServices'
@@ -226,10 +245,10 @@ foreach ($competitor in $competitors) {
             Write-Host -BackgroundColor Green "$($Competitor.Name): B6.3 - 1 - AI Search is present"
 
             # B6.4 Search Index luotu oikeasta datasta - Index luotu oikeasta datasta
-            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.4 -   - CHECK SEARCH INDEX FOR CORRECT DATA!"
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.4 -   - 2 points - CHECK SEARCH INDEX FOR CORRECT DATA!"
 
             # B6.5 Custom data käytettävissä playgroundissa - Index lisätty AI Projektiin siten, että toimii playgroundissa
-            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.5 -   - CHECK CUSTOM DATA IN PLAYGROUND!"        
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.5 -   - 2 points - CHECK CUSTOM DATA IN PLAYGROUND!"        
         }
         else {
             Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0"
@@ -245,13 +264,14 @@ foreach ($competitor in $competitors) {
         else {
             $WebRequest = $null
         }
+        # TODO: Need to check if anonymous login is allowed
         If ($WebRequest) {
             Write-Host -BackgroundColor Green "$($Competitor.Name): B6.6 - 1 - WebApp is present and anonymous login allowed at: https://$($WebApp.DefaultHostName)"
             # B6.7 Selainpohjainen chat-applikaatio vastaa omasta datasta - Kysyttäessä taitaja-kilpailuiden ylintä päätösvaltaa käyttävää elintä saadaan vastaukseksi jury.
             if ($AISearch) {
-                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.7 -   - Ask: 'Mikä on Taitaja kilpailuiden ylintä päätösvaltaa käyttävä elin?' and check the answer!"
+                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.7 -   - 2 points - Ask: 'Mikä on Taitaja kilpailuiden ylintä päätösvaltaa käyttävä elin?' and check the answer!"
                 # B6.8 Selainpohjainen chat-applikaatio vastaa oikein tuntemattomaan dataan - Kysyttäessä taitaja-kilpailuiden pääjohtajan puhelinnumeroa saadaan vastauksesi, ettei sitä löydetä
-                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.8 -   - Ask: 'Mikä on Taitaja kilpailuiden pääjohtajan puhelinnumero?' and check the answer!"
+                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.8 -   - 1 point - Ask: 'Mikä on Taitaja kilpailuiden pääjohtajan puhelinnumero?' and check the answer!"
             }
             else {
                 Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
@@ -277,6 +297,6 @@ foreach ($competitor in $competitors) {
     }
     
     # B6.9 Villelle toimitettu yksinkertainen PDF ohjeistus - Sähköpostista löytyy yksinkertainen PDF-ohjeistus
-    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.9 -   - CHECK EMAIL FOR PDF INSTRUCTIONS!"
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.9 -   - 1 point - CHECK EMAIL FOR PDF INSTRUCTIONS!"
 
 }   
