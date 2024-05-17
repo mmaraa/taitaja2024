@@ -197,14 +197,15 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
     }
 
-    # TODO B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+    # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+    # TODO Automate this
     Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 points - CHECK AUTOMATION FUNCTIONALITY!"
-    
+
 
     # B4 Azure valvonta
 
     # B4.1 Automaation ongelmahälytys toimii - Hälytys tulee sähköpostiin
-    # Needs to be planned, how error can be triggered
+    # TODO Needs to be planned, how error can be triggered
     # Manual check in email
     $LogMonitorRules = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType microsoft.insights/scheduledqueryrules
     if ($LogMonitorRules) {
