@@ -95,7 +95,7 @@ foreach ($competitor in $competitors) {
 
             $Website = Invoke-WebRequest -Uri "http://$($DNSName)" -ErrorAction SilentlyContinue
             if ($Website.Content -like '*<title>Kuplakone Maintenance</title>*') {
-                Write-Host -BackgroundColor Green "$($Competitor.Name): B2.2 - 1 - Website kuplakone.c$($competitor.number).tuulet.in is reachable and displays maintenance page."
+                Write-Host -BackgroundColor Green "$($Competitor.Name): B2.2 - 1 - Website $DNSName is reachable and displays maintenance page."
             }
             else {
                 Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
@@ -150,7 +150,7 @@ foreach ($competitor in $competitors) {
                 }
             }
             if ($ContentMatch) {
-                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains Remove-Item -Path c:\temp\* -Force"
+                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains *Remove-Item*temp*Force*"
             }
             else {
                 Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
