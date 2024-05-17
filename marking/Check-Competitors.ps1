@@ -199,7 +199,7 @@ foreach ($competitor in $competitors) {
 
     # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
     # TODO Automate this
-    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 points - CHECK AUTOMATION FUNCTIONALITY!"
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
 
 
     # B4 Azure valvonta
