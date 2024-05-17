@@ -60,38 +60,42 @@ foreach ($competitor in $competitors) {
     }
     if ($SFTPAccount.EnableSftp) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B1.1 - 1 - SFTP is enabled"
+
+        # B1.2 Tunnus luotu	- Tunnus löytyy konfiguraatiosta
+        $SFTPUser = $null
+        if ($competitor.sftpAccount -and $competitor.sftpPassword) {
+            $SFTPUser = Get-AzStorageLocalUser -resourceGroup $($competitor.resourceGroupName) -StorageAccountName $($competitor).sftpAccount -ErrorAction SilentlyContinue | Select-Object Name, HasSshPassword
+        }
+
+        if ($SFTPUser.Name -eq 'sftpintegpalkkalaskenta' -and $SFTPUser.HasSshPassword) {
+            Write-Host -BackgroundColor Green "$($Competitor.Name): B1.2 - 1 - SFTP user sftpintegpalkkalaskenta created and has SSH password"
+
+            # B1.3 Tunnus toimii - Tunnuksella pääsee kirjautumaan SFTP-palveluun
+            $SFTPSession = $null
+            $ConnectionEndpoint = $null
+            if ($competitor.sftpAccount -and $competitor.sftpPassword) {
+                [pscredential]$SFTPCredential = New-Object System.Management.Automation.PSCredential ("$($competitor.sftpAccount).sftppalkat.sftpintegpalkkalaskenta", $(ConvertTo-SecureString $($competitor.sftpPassword) -AsPlainText -Force) )
+                $ConnectionEndpoint = "$($competitor.sftpAccount).blob.core.windows.net"
+                $SFTPSession = New-SFTPSession -Credential $SFTPCredential -HostName $ConnectionEndpoint -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+            }
+
+            if ($SFTPSession) {
+                Write-Host -BackgroundColor Green "$($Competitor.Name): B1.3 - 1 - SFTP connection to $ConnectionEndpoint successful"
+                $null = Remove-SFTPSession $SFTPSession
+            }
+            else {
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0 - SFTP connection to $ConnectionEndpoint failed"
+            }
+        }
+        else {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0 - SFTP user sftpintegpalkkalaskenta not found or does not have SSH password"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0 - SFTP user sftpintegpalkkalaskenta not found or does not have SSH password"
+        }
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B1.1 - 0 - SFTP is not enabled"
-    }
-
-    # B1.2 Tunnus luotu	- Tunnus löytyy konfiguraatiosta
-    $SFTPUser = $null
-    if ($competitor.sftpAccount -and $competitor.sftpPassword) {
-        $SFTPUser = Get-AzStorageLocalUser -resourceGroup $($competitor.resourceGroupName) -StorageAccountName $($competitor).sftpAccount -ErrorAction SilentlyContinue | Select-Object Name, HasSshPassword
-    }
-
-    if ($SFTPUser.Name -eq 'sftpintegpalkkalaskenta' -and $SFTPUser.HasSshPassword) {
-        Write-Host -BackgroundColor Green "$($Competitor.Name): B1.2 - 1 - SFTP user sftpintegpalkkalaskenta created and has SSH password"
-    }
-    else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0 - SFTP user sftpintegpalkkalaskenta not found or does not have SSH password"
-    }
-
-    # B1.3 Tunnus toimii - Tunnuksella pääsee kirjautumaan SFTP-palveluun
-    $SFTPSession = $null
-    if ($competitor.sftpAccount -and $competitor.sftpPassword) {
-        [pscredential]$SFTPCredential = New-Object System.Management.Automation.PSCredential ("$($competitor.sftpAccount).sftppalkat.sftpintegpalkkalaskenta", $(ConvertTo-SecureString $($competitor.sftpPassword) -AsPlainText -Force) )
-        $ConnectionEndpoint = "$($competitor.sftpAccount).blob.core.windows.net"
-        $SFTPSession = New-SFTPSession -Credential $SFTPCredential -HostName $ConnectionEndpoint -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
-    }
-
-    if ($SFTPSession) {
-        Write-Host -BackgroundColor Green "$($Competitor.Name): B1.3 - 1 - SFTP connection to $ConnectionEndpoint successful"
-        $null = Remove-SFTPSession $SFTPSession
-    }
-    else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0 - SFTP connection to $ConnectionEndpoint failed"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0 - SFTP is not enabled"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0 - SFTP is not enabled"
     }
 
     # B2 Web-sivu
