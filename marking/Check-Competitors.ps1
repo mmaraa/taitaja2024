@@ -19,7 +19,7 @@ param (
 
 $competitors = Import-Csv $csvPath
 # Debug
-# $competitor = $competitors[0]
+# $competitor = $competitors[1]
 
 # check that we are connected to azure
 if (-not (Get-AzContext)) {
