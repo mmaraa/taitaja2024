@@ -138,7 +138,7 @@ foreach ($competitor in $competitors) {
                 $null = New-Item -Path "\work\marking\$($competitor.Name)" -ItemType Directory -Force -ErrorAction SilentlyContinue
                 $null = Export-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Runbook.Name -Slot 'Published' -OutputFolder "\work\marking\$($competitor.Name)\" -Force -ErrorAction SilentlyContinue
                 # Check if file contains string
-                if ($(Get-Content -Path "\work\marking\$($competitor.name)\$($Runbook.Name).ps1") -like 'Remove-Item -Path c:\temp\* -Force') {
+                if ($(Get-Content -Path "\work\marking\$($competitor.name)\$($Runbook.Name).ps1") -like '*Remove-Item*temp*Force*') {
                     $ContentMatch = $true
                     $Schedule = Get-AzAutomationScheduledRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -RunbookName $Runbook.Name -ErrorAction SilentlyContinue
                     $ScheduleDetails = Get-AzAutomationSchedule -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Schedule.ScheduleName -ErrorAction SilentlyContinue 
@@ -182,7 +182,7 @@ foreach ($competitor in $competitors) {
     # Manual check in email
     $LogMonitorRules = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType microsoft.insights/scheduledqueryrules
     if ($LogMonitorRules) {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - MONITORING RULES PRESENT - CHECK EMAIL!"
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - Log Search alert rule present. CREATE ALERT AND CHECK EMAIL!"
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B4.1 - 0"
@@ -208,4 +208,75 @@ foreach ($competitor in $competitors) {
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0"
     }
+
+    # B6 Tekoäly				
+    # B6.1 Open AI Service asennettu - Palvelu asennettu ja hubi luotu
+    $AIService = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'microsoft.cognitiveservices/accounts'
+    $AIHub = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'Microsoft.MachineLearningServices/workspaces'
+
+    if ($AIService -and $AIHub) {
+        Write-Host -BackgroundColor Green "$($Competitor.Name): B6.1 - 1 - AI Service and AI Hub are present"
+    
+        # B6.2 Mallit asennettu käytettäväksi - GPT ja Text embedding malli deployattu
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.2 -   - CHECK CORRECT MODELS. 0,5 point per model!"
+
+        # B6.3 AI Search deplyattu - AI Search löytyy
+        $AISearch = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType 'Microsoft.Search/searchServices'
+        if ($AISearch) {
+            Write-Host -BackgroundColor Green "$($Competitor.Name): B6.3 - 1 - AI Search is present"
+
+            # B6.4 Search Index luotu oikeasta datasta - Index luotu oikeasta datasta
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.4 -   - CHECK SEARCH INDEX FOR CORRECT DATA!"
+
+            # B6.5 Custom data käytettävissä playgroundissa - Index lisätty AI Projektiin siten, että toimii playgroundissa
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.5 -   - CHECK CUSTOM DATA IN PLAYGROUND!"        
+        }
+        else {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0"
+        }
+
+        # B6.6 Selainpohjainen chat-applikaatio käytettävissä - Chat applikaatioon pääsee sisälle
+        $WebApp = Get-AzWebApp -ResourceGroupName $competitor.resourceGroupName -ErrorAction SilentlyContinue
+        if ($WebApp) {
+            $WebRequest = Invoke-WebRequest -Uri "https://$($WebApp.DefaultHostName)" -ErrorAction SilentlyContinue
+        }
+        else {
+            $WebRequest = $null
+        }
+        If ($WebRequest) {
+            Write-Host -BackgroundColor Green "$($Competitor.Name): B6.6 - 1 - WebApp is present and anonymous login allowed at: https://$($WebApp.DefaultHostName)"
+            # B6.7 Selainpohjainen chat-applikaatio vastaa omasta datasta - Kysyttäessä taitaja-kilpailuiden ylintä päätösvaltaa käyttävää elintä saadaan vastaukseksi jury.
+            if ($AISearch) {
+                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.7 -   - Ask: 'Mikä on Taitaja kilpailuiden ylintä päätösvaltaa käyttävä elin?' and check the answer!"
+                # B6.8 Selainpohjainen chat-applikaatio vastaa oikein tuntemattomaan dataan - Kysyttäessä taitaja-kilpailuiden pääjohtajan puhelinnumeroa saadaan vastauksesi, ettei sitä löydetä
+                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.8 -   - Ask: 'Mikä on Taitaja kilpailuiden pääjohtajan puhelinnumero?' and check the answer!"
+            }
+            else {
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+            }
+        }            
+        else {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+        }
+
+    }
+    else {
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.1 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+    }
+    
+    # B6.9 Villelle toimitettu yksinkertainen PDF ohjeistus - Sähköpostista löytyy yksinkertainen PDF-ohjeistus
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.9 -   - CHECK EMAIL FOR PDF INSTRUCTIONS!"
+
 }   
