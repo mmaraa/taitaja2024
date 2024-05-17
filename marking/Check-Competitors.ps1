@@ -1,3 +1,23 @@
+<#
+.SYNOPSIS
+This script checks various criteria for competitors in a Taitaja competition.
+
+.DESCRIPTION
+The script checks different aspects of competitors' configurations, such as SFTP service, web page, automation, and Azure monitoring.
+
+.PARAMETER csvPath
+The path to the CSV file containing competitor information. Default value is '.\competitors.csv'.
+
+.PARAMETER subscriptionId
+The subscription ID to use for the checks.
+
+.NOTES
+Author: Mika Vilpo
+Date: 2024-05-17
+
+.EXAMPLE
+.\Check-Competitors.ps1 -csvPath '.\competitors.csv' -subscriptionId '00000000-0000-0000-0000-000000000000'
+#>
 
 [CmdletBinding()]
 param (
@@ -18,7 +38,8 @@ param (
 # name,number,resourcegroupname,sftpaccount,sftppassword
 
 $competitors = Import-Csv $csvPath
-# Debug
+
+# Debugging
 # $competitor = $competitors[1]
 
 # check that we are connected to azure
@@ -41,7 +62,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B1.1 - 1 - SFTP is enabled"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.1 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.1 - 0 - SFTP is not enabled"
     }
 
     # B1.2 Tunnus luotu	- Tunnus löytyy konfiguraatiosta
@@ -54,7 +75,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B1.2 - 1 - SFTP user sftpintegpalkkalaskenta created and has SSH password"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0 - SFTP user sftpintegpalkkalaskenta not found or does not have SSH password"
     }
 
     # B1.3 Tunnus toimii - Tunnuksella pääsee kirjautumaan SFTP-palveluun
@@ -70,7 +91,7 @@ foreach ($competitor in $competitors) {
         $null = Remove-SFTPSession $SFTPSession
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0 - SFTP connection to $ConnectionEndpoint failed"
     }
 
     # B2 Web-sivu
@@ -89,7 +110,7 @@ foreach ($competitor in $competitors) {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B2.1 - 1 - DNS entry $DNSName points to storage account $StorageAccountName and has static website enabled."
             }
             else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0 - DNS entry $DNSName points to storage account $StorageAccountName but static website is not enabled."
             }
             # B2.2 Web-sivu aukeaa selaimella - Annettu index.html-sivu aukeaa
 
@@ -98,17 +119,17 @@ foreach ($competitor in $competitors) {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B2.2 - 1 - Website $DNSName is reachable and displays maintenance page."
             }
             else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0 - Website $DNSName is not reachable or does not display maintenance page."
             }
         }
         else {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0 - DNS entry $DNSName does not point to a storage account"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0 - DNS entry $DNSName does not point to a storage account"
         }
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0 - DNS entry $DNSName not found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0 - DNS entry $DNSName not found"
     }
 
     # B3 Automatisoinnin modernisointi
@@ -121,7 +142,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B3.1 - 1 - Azure Arc machine $($ArcMachine.Name) is connected"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.1 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.1 - 0 - Azure Arc machine not connected"
     }
 
     # B3.2 Scheduled task siirretty pilveen	- Sama koodi löytyy automation runbookista
@@ -153,23 +174,23 @@ foreach ($competitor in $competitors) {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains *Remove-Item*temp*Force*"
             }
             else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - Runbook $($Runbook.Name) does not contain *Remove-Item*temp*Force*"
             }
             if ($ScheduleMatch) {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B3.3 - 1 - Runbook $($Runbook.Name) is scheduled to run on Mondays at 04:00"
             }
             else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - Runbook $($Runbook.Name) is not scheduled to run on Mondays at 04:00"
             }
         }
         else {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No runbooks found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No runbooks found"
         }
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No Automation Account found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
     }
 
 
@@ -185,7 +206,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - 1 point - Log Search alert rule present. CREATE ALERT AND CHECK EMAIL!"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B4.1 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B4.1 - 0 - No Log Search alert rule found"
     }
 
     # B4.2 VM Insights otettu käyttöön pyydetysti VM Insights perf ja dependency arcatulla koneella
@@ -194,10 +215,10 @@ foreach ($competitor in $competitors) {
         $ArcExtensions = Get-AzConnectedMachineExtension -MachineName $ArcMachine.Name -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
     }
     if ($ArcExtensions.Name -contains 'AzureMonitorWindowsAgent' -and $ArcExtensions.Name -contains 'DependencyAgentWindows') {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.2 -   - 1 points - Dependency Agent extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.2 -   - 1 point - Dependency Agent extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B4.2 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B4.2 - 0 - No Dependency Agent extension found"
     }
 
     # B5 Moderni hallinta
@@ -206,7 +227,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - 1 point - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0 - No Windows Admin Center extension found"
     }
 
     # B6 Tekoäly				
@@ -233,7 +254,7 @@ foreach ($competitor in $competitors) {
         if ($b62Points -gt 1) { $b62Points = 1 }
 
         if ($b62Points -eq 0) {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0 - No models deployed"
         }
         else {    
             Write-Host -BackgroundColor Green "$($Competitor.Name): B6.2 - $b62Points - Models deployed"
@@ -251,9 +272,9 @@ foreach ($competitor in $competitors) {
             Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.5 -   - 2 points - CHECK CUSTOM DATA IN PLAYGROUND!"        
         }
         else {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0 - No AI Search found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0 - No AI Search found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0 - No AI Search found"
         }
 
         # B6.6 Selainpohjainen chat-applikaatio käytettävissä - Chat applikaatioon pääsee sisälle
@@ -274,26 +295,26 @@ foreach ($competitor in $competitors) {
                 Write-Host -BackgroundColor Yellow "$($Competitor.Name): B6.8 -   - 1 point - Ask: 'Mikä on Taitaja kilpailuiden pääjohtajan puhelinnumero?' and check the answer!"
             }
             else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0 - No AI Search found"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0 - No AI Search found"
             }
         }            
         else {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0 - No Website deployed"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0 - No Website deployed"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0 - No Website deployed"
         }
 
     }
     else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.1 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.1 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.2 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.3 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.4 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.5 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.6 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.7 - 0 - No AI services or AI hubs found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B6.8 - 0 - No AI services or AI hubs found"
     }
     
     # B6.9 Villelle toimitettu yksinkertainen PDF ohjeistus - Sähköpostista löytyy yksinkertainen PDF-ohjeistus
