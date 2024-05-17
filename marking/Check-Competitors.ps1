@@ -11,6 +11,8 @@ param (
 )
 
 # Requires POSH SSH module
+# Requires Az module
+# Resuires Az.ConnectedMachine module
 
 # CSV Schema
 # name,number,resourcegroup,sftpaccount,sftppassword
@@ -28,7 +30,9 @@ if (-not (Get-AzContext)) {
 Set-AzContext -SubscriptionId $subscriptionId
 
 foreach ($competitor in $competitors) {
-    # B1.1
+    # B1 SFTP-palvelu
+
+    # B1.1 SFTP-palvelu enabloitu storage accountista - Storage account vastaa SFTP-palveluun
     $SFTPAccount = Get-AzStorageAccount -resourceGroup $($competitor.resourcegroup) -StorageAccountName $($competitor).sftpaccount -ErrorAction SilentlyContinue | Select-Object StorageAccountName, ResourceGroupName, EnableSftp
 
     if ($SFTPAccount.EnableSftp) {
@@ -38,7 +42,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B1.1 - 0"
     }
 
-    # B1.2
+    # B1.2 Tunnus luotu	- Tunnus löytyy konfiguraatiosta
     $SFTPUser = Get-AzStorageLocalUser -resourceGroup $($competitor.resourcegroup) -StorageAccountName $($competitor).sftpaccount -ErrorAction SilentlyContinue | Select-Object Name, HasSshPassword
 
     if ($SFTPUser.Name -eq 'sftpintegpalkkalaskenta' -and $SFTPUser.HasSshPassword) {
@@ -48,7 +52,7 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B1.2 - 0"
     }
 
-    # B1.3
+    # B1.3 Tunnus toimii - Tunnuksella pääsee kirjautumaan SFTP-palveluun
     [pscredential]$SFTPCredential = New-Object System.Management.Automation.PSCredential ("$($competitor.sftpaccount).sftppalkat.sftpintegpalkkalaskenta", $(ConvertTo-SecureString $($competitor.sftppassword) -AsPlainText -Force) )
     $ConnectionEndpoint = "$($competitor.sftpaccount).blob.core.windows.net"
     $SFTPSession = New-SFTPSession -Credential $SFTPCredential -HostName $ConnectionEndpoint -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
@@ -61,14 +65,15 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B1.3 - 0"
     }
 
-    # B2
+    # B2 Web-sivu
 
     # TODO: CHANGE DNS!
     $DNSName = "kuplakone.c$($competitor.number).tuulet.in"
     $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue
     $StorageAccountName = $dnsentry[0].namehost.split('.')[0]
     if ($StorageAccountName) {
-        # B2.1
+        # B2.1 Staattinen web-sivu otettu käyttöön - Storage accountista enabloitu static web page
+
         $StorageCtx = New-AzStorageContext -StorageAccountName $StorageAccountName -ErrorAction SilentlyContinue
         $StorageProperties = Get-AzStorageServiceProperty -ServiceType blob -Context $StorageCtx -ErrorAction SilentlyContinue 
 
@@ -78,7 +83,8 @@ foreach ($competitor in $competitors) {
         else {
             Write-Host -BackgroundColor Red "$($Competitor.Name): B2.1 - 0"
         }
-        # B2.2
+        # B2.2 Web-sivu aukeaa selaimella - Annettu index.html-sivu aukeaa
+
         $Website = Invoke-WebRequest -Uri "http://$($DNSName)" -ErrorAction SilentlyContinue
         if ($Website.Content -like '*<title>Kuplakone Maintenance</title>*') {
             Write-Host -BackgroundColor Green "$($Competitor.Name): B2.2 - 1 - Website kuplakone.c$($competitor.number).tuulet.in is reachable and displays maintenance page."
@@ -92,10 +98,11 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B2.2 - 0"
     }
 
-    # B3
+    # B3 Automatisoinnin modernisointi
 
-    # B3.1
-    $ArcMachine = Get-AzConnectedMachine -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue | Select-Object ResourceGroupName, Name, Status
+    # B3.1 Kone yhdistetty Azureen - Arc-objekti löytyy connected-tilassa
+
+    $ArcMachine = Get-AzConnectedMachine -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue
 
     if ($ArcMachine.Status -eq 'Connected') {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B3.1 - 1 - Azure Arc machine $($ArcMachine.Name) is connected"
@@ -104,7 +111,8 @@ foreach ($competitor in $competitors) {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B3.1 - 0"
     }
 
-    # B3.2
+    # B3.2 Scheduled task siirretty pilveen	- Sama koodi löytyy automation runbookista
+    # B3.3 Ajastus konfiguroitu automaatioon kuten palvelimella	- Schedule löytyy samalla aikataulutuksella
     $AutomationAccount = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue
     $ContentMatch = $false
     $ScheduleMatch = $false
@@ -145,6 +153,33 @@ foreach ($competitor in $competitors) {
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0"
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0"
         }
+    }
+
+    # TODO B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+
+    # B4 Azure valvonta
+
+    # B4.1 Automaation ongelmahälytys toimii - Hälytys tulee sähköpostiin
+    # Needs to be planned, how error can be triggered
+    # Manual check in email
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.1 -   - MONITORING - CHECK EMAIL!"
+
+    # B4.2 VM Insights otettu käyttöön pyydetysti VM Insights perf ja dependency arcatulla koneella
+    $ArcExtensions = Get-AzConnectedMachineExtension -MachineName $ArcMachine.Name -ResourceGroupName $($competitor.resourcegroup) -ErrorAction SilentlyContinue
+    if ($ArcExtensions.Name -contains 'AzureMonitorWindowsAgent' -and $ArcExtensions.Name -contains 'DependencyAgentWindows') {
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B4.2 -   - Dependency Agent extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+    }
+    else {
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B4.2 - 0"
+    }
+
+    # B5 Moderni hallinta
+    # B5.1 Windows Admin Center asennettu ja toimii Villellä - Ville pääsee kirjautumaan sisään WAC:iin
+    if ($ArcExtensions.Name -contains 'AdminCenter') {
+        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+    }
+    else {
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0"
     }
 
 }   
