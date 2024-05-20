@@ -82,6 +82,24 @@ After you have user account CSV available, you can continue to run competitor si
 .\Create-CompetitionInfrastructure.ps1 -csvPath ".\competitorUserAccounts.csv" -competitionName "taitaja2024" -rootDnsZoneId "/subscriptions/c95e8492-4f56-48ce-a609-8b312638e773/resourceGroups/rg-taitaja2024-hoster-prod-001/providers/Microsoft.Network/dnszones/kupla.eu" -targetSubscriptionId "c95e8492-4f56-48ce-a609-8b312638e773" -villeUserObjectId "f3b8b6ed-69b1-4056-9ee6-215339c800af"
 ```
 
+## Marking
+
+For marking test projects, there are two scripts. One for generating error in the automation account script running to test alerting and second one for checking test projects for marks. 80% of marks are tested automatically and rest need some manual step.
+
+### Test-AutomationTask.ps1
+
+```powershell
+.\Test-AutomationTask.ps1 -resourceGroupName 'rg-competitor-k1-Taitaja2024-prod-001' -subscriptionId '00000000-0000-0000-0000-000000000000'
+```
+
+### Check-Competitors.ps1
+
+Create CSV file with schema: name,number,resourcegroupname,sftpaccount,sftppassword
+
+```powershell
+.\Check-Competitors.ps1 -csvPath '.\competitors.csv' -subscriptionId '00000000-0000-0000-0000-000000000000'
+```
+
 ## Contribution
 
 Repository was created during the preparation of Taitaja 2024 Cloudservice test project and it **is not planned to update** after the competition. After the cloud service test project is ended and the protest time is over, the repository visibility is changed to public. Feel free to use this repository for teaching and training. 
