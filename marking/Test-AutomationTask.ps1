@@ -13,7 +13,7 @@ The subscription ID to use for the checks.
 
 .NOTES
 Author: Mika Vilpo
-Date: 2024-05-17
+Date: 2024-05-20
 
 .EXAMPLE
 .\Test-AutomationTask.ps1 -resourceGroupName 'rg-competitor-k1-Taitaja2024-prod-001' -subscriptionId '00000000-0000-0000-0000-000000000000'
