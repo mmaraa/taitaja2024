@@ -25,6 +25,10 @@ param (
     [string]
     $csvPath = '.\competitors.csv',
 
+    [Parameter(Mandatory = $false)]
+    [string]
+    $markingLockScriptUri = 'https://satempwebkupla.blob.core.windows.net/marking/Add-LockedFile.ps1',
+
     [Parameter(Mandatory = $true)]
     [string]
     $subscriptionId 
@@ -56,7 +60,7 @@ foreach ($competitor in $competitors) {
     # B1.1 SFTP-palvelu enabloitu storage accountista - Storage account vastaa SFTP-palveluun
     $SFTPAccount = $null
     if ($competitor.sftpAccount) {
-        $SFTPAccount = Get-AzStorageAccount -resourceGroup $($competitor.resourceGroupName) -StorageAccountName $($competitor).sftpAccount -ErrorAction SilentlyContinue | Select-Object StorageAccountName, ResourceGroupName, EnableSftp
+        $SFTPAccount = Get-AzStorageAccount -resourceGroup $($competitor.resourceGroupName) -StorageAccountName $($competitor.sftpAccount) -ErrorAction SilentlyContinue | Select-Object StorageAccountName, ResourceGroupName, EnableSftp
     }
     if ($SFTPAccount.EnableSftp) {
         Write-Host -BackgroundColor Green "$($Competitor.Name): B1.1 - 1 - SFTP is enabled"
@@ -107,8 +111,8 @@ foreach ($competitor in $competitors) {
         if ($StorageAccountName) {
             # B2.1 Staattinen web-sivu otettu käyttöön - Storage accountista enabloitu static web page
 
-            $StorageCtx = New-AzStorageContext -StorageAccountName $StorageAccountName -ErrorAction SilentlyContinue
-            $StorageProperties = Get-AzStorageServiceProperty -ServiceType blob -Context $StorageCtx -ErrorAction SilentlyContinue 
+            $StorageAccount = Get-AzStorageAccount -ResourceGroupName $($competitor.resourceGroupName) -Name $StorageAccountName -ErrorAction SilentlyContinue  
+            $StorageProperties = Get-AzStorageServiceProperty -ServiceType blob -Context $StorageAccount.Context -ErrorAction SilentlyContinue 
 
             if ($StorageProperties.StaticWebsite.Enabled) {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B2.1 - 1 - DNS entry $DNSName points to storage account $StorageAccountName and has static website enabled."
@@ -186,9 +190,9 @@ foreach ($competitor in $competitors) {
             else {
                 Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - Runbook $($Runbook.Name) is not scheduled to run on Mondays at 04:00"
             }
-    # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
-    # TODO Automate this
-    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
+            # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+            # TODO Automate this
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
 
         }
         else {
@@ -207,7 +211,6 @@ foreach ($competitor in $competitors) {
     # B4 Azure valvonta
 
     # B4.1 Automaation ongelmahälytys toimii - Hälytys tulee sähköpostiin
-    # TODO Needs to be planned, how error can be triggered
     # Manual check in email
     $LogMonitorRules = Get-AzResource -ResourceGroupName $competitor.resourceGroupName -ResourceType microsoft.insights/scheduledqueryrules
     if ($LogMonitorRules) {
@@ -232,7 +235,13 @@ foreach ($competitor in $competitors) {
     # B5 Moderni hallinta
     # B5.1 Windows Admin Center asennettu ja toimii Villellä - Ville pääsee kirjautumaan sisään WAC:iin
     if ($ArcExtensions.Name -contains 'AdminCenter') {
-        Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - 1 point - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name). CHECK FUNCTIONALITY!"
+        $RBAC = Get-AzRoleAssignment -Scope $ArcMachine.Id -SignInName ville@kupla.eu -RoleDefinitionName 'Windows Admin Center Administrator Login' -ErrorAction SilentlyContinue
+        if ($RBAC) {
+            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B5.1 -   - 1 point - Windows Admin Center extension is installed on Azure Arc machine $($ArcMachine.Name) and RBAC is ok. CHECK FUNCTIONALITY!"
+        }
+        else {
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0 - Ville cannot log in to Windows Admin Center"
+        }
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B5.1 - 0 - No Windows Admin Center extension found"
@@ -293,7 +302,6 @@ foreach ($competitor in $competitors) {
         else {
             $WebRequest = $null
         }
-        # TODO: Need to check if anonymous login is allowed
         If ($WebRequest.content -like '*<div id="root"></div>*') {
             Write-Host -BackgroundColor Green "$($Competitor.Name): B6.6 - 1 - WebApp is present and anonymous login allowed at: https://$($WebApp.DefaultHostName)"
             # B6.7 Selainpohjainen chat-applikaatio vastaa omasta datasta - Kysyttäessä taitaja-kilpailuiden ylintä päätösvaltaa käyttävää elintä saadaan vastaukseksi jury.
