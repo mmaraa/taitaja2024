@@ -1,7 +1,7 @@
 # PowerShell script to create and lock a file
 
 # Specify the path and name of the file
-$filePath = "C:\Path\To\Your\File\lockedfile.txt"
+$filePath = "C:\Temp\lockedfile.txt"
 
 # Create the file if it doesn't exist
 if (-not (Test-Path $filePath)) {
