@@ -186,20 +186,22 @@ foreach ($competitor in $competitors) {
             else {
                 Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - Runbook $($Runbook.Name) is not scheduled to run on Mondays at 04:00"
             }
+    # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+    # TODO Automate this
+    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
+
         }
         else {
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No runbooks found"
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No runbooks found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No runbooks found"
         }
     }
     else {
         Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No Automation Account found"
         Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
+        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No Automation Account found"
     }
-
-    # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
-    # TODO Automate this
-    Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
 
 
     # B4 Azure valvonta
@@ -292,7 +294,7 @@ foreach ($competitor in $competitors) {
             $WebRequest = $null
         }
         # TODO: Need to check if anonymous login is allowed
-        If ($WebRequest) {
+        If ($WebRequest.content -like '*<div id="root"></div>*') {
             Write-Host -BackgroundColor Green "$($Competitor.Name): B6.6 - 1 - WebApp is present and anonymous login allowed at: https://$($WebApp.DefaultHostName)"
             # B6.7 Selainpohjainen chat-applikaatio vastaa omasta datasta - Kysyttäessä taitaja-kilpailuiden ylintä päätösvaltaa käyttävää elintä saadaan vastaukseksi jury.
             if ($AISearch) {
