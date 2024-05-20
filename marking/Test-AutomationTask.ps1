@@ -16,7 +16,7 @@ Author: Mika Vilpo
 Date: 2024-05-17
 
 .EXAMPLE
-.\Test-AutomationTask.ps1 -csvPath '.\competitors.csv' -subscriptionId '00000000-0000-0000-0000-000000000000'
+.\Test-AutomationTask.ps1 -resourceGroupName 'rg-competitor-k1-Taitaja2024-prod-001' -subscriptionId '00000000-0000-0000-0000-000000000000'
 #>
 
 [CmdletBinding()]
