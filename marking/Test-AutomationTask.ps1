@@ -21,9 +21,9 @@ Date: 2024-05-17
 
 [CmdletBinding()]
 param (
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [string]
-    $csvPath = '.\competitors.csv',
+    $resourceGroupName,
 
     [Parameter(Mandatory = $false)]
     [string]
@@ -36,14 +36,6 @@ param (
 # Requires Az module
 # Resuires Az.ConnectedMachine module
 
-# CSV Schema
-# name,number,resourcegroupname,sftpaccount,sftppassword
-
-$competitors = Import-Csv $csvPath
-
-# Debugging
-# $competitor = $competitors[1]
-
 # check that we are connected to azure
 if (-not (Get-AzContext)) {
     Connect-AzAccount
@@ -52,9 +44,9 @@ if (-not (Get-AzContext)) {
 # switch to correct subscription
 $null = Set-AzContext -SubscriptionId $subscriptionId
 
-foreach ($competitor in $competitors) {
-    $ArcMachine = Get-AzConnectedMachine -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
+$ArcMachines = Get-AzConnectedMachine -ResourceGroupName $resourceGroupName -ErrorAction SilentlyContinue
 
+foreach ($ArcMachine in $ArcMachines) {
     if ($ArcMachine.Status -eq 'Connected') {
         Write-Output "$($Competitor.Name): Arc connected. Creating locked file in c:\temp on $($ArcMachine.Name)"
         New-AzConnectedMachineRunCommand -ResourceGroupName $competitor.resourceGroupName -MachineName $ArcMachine.Name -RunCommandName LockFile -Location $ArcMachine.Location -SourceScriptUri $markingLockScriptUri        
@@ -73,4 +65,4 @@ foreach ($competitor in $competitors) {
             }
         }
     }
-}   
+}
