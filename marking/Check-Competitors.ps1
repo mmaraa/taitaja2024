@@ -63,7 +63,7 @@ foreach ($competitor in $competitors) {
 
         # B1.2 Tunnus luotu	- Tunnus löytyy konfiguraatiosta
         $SFTPUser = $null
-        if ($competitor.sftpAccount -and $competitor.sftpPassword) {
+        if ($competitor.sftpAccount) {
             $SFTPUser = Get-AzStorageLocalUser -resourceGroup $($competitor.resourceGroupName) -StorageAccountName $($competitor).sftpAccount -ErrorAction SilentlyContinue | Select-Object Name, HasSshPassword
         }
 
