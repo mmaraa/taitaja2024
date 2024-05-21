@@ -101,7 +101,7 @@ foreach ($competitor in $competitors) {
     # B2 Web-sivu
 
     $DNSName = "kuplakone.k$($competitor.number).kupla.eu"
-    $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue | Where-Object {$_.Type -eq "CNAME"}
+    $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue | Where-Object { $_.Type -eq 'CNAME' }
     if ($DNSEntry) {
         $StorageAccountName = $dnsentry[0].namehost.split('.')[0]
         $StorageAccount = Get-AzStorageAccount -ResourceGroupName $($competitor.resourceGroupName) -Name $StorageAccountName -ErrorAction SilentlyContinue  
@@ -119,6 +119,7 @@ foreach ($competitor in $competitors) {
             }
             # B2.2 Web-sivu aukeaa selaimella - Annettu index.html-sivu aukeaa
 
+            $Website = $null
             $Website = Invoke-WebRequest -Uri "http://$($DNSName)" -ErrorAction SilentlyContinue
             if ($Website.Content -like '*<title>Kuplakone Maintenance</title>*') {
                 Write-Host -BackgroundColor Green "$($Competitor.Name): B2.2 - 1 - Website $DNSName is reachable and displays maintenance page."
@@ -152,56 +153,58 @@ foreach ($competitor in $competitors) {
 
     # B3.2 Scheduled task siirretty pilveen	- Sama koodi löytyy automation runbookista
     # B3.3 Ajastus konfiguroitu automaatioon kuten palvelimella	- Schedule löytyy samalla aikataulutuksella
-    $AutomationAccount = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
+    $AutomationAccounts = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
     $ContentMatch = $false
     $ScheduleMatch = $false
 
-    if ($AutomationAccount) {
-        $AutomationRunbook = Get-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccount $AutomationAccount.AutomationAccountName -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'AzureAutomationTutorialWithIdentity*' -and $_.State -like 'Published' } | Select-Object Name, State
+    foreach ($AutomationAccount in $AutomationAccounts) {
+        if ($AutomationAccount) {
+            $AutomationRunbook = Get-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccount $AutomationAccount.AutomationAccountName -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'AzureAutomationTutorialWithIdentity*' -and $_.State -like 'Published' } | Select-Object Name, State
 
-        if ($AutomationRunbook) {
-            foreach ($Runbook in $AutomationRunbook) {
-                $null = New-Item -Path "\work\marking\$($competitor.Name)" -ItemType Directory -Force -ErrorAction SilentlyContinue
-                $null = Export-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Runbook.Name -Slot 'Published' -OutputFolder "\work\marking\$($competitor.Name)\" -Force -ErrorAction SilentlyContinue
-                # Check if file contains string
-                if ($(Get-Content -Path "\work\marking\$($competitor.name)\$($Runbook.Name).ps1") -like '*Remove-Item*temp*Force*') {
-                    $ContentMatch = $true
-                    $Schedule = Get-AzAutomationScheduledRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -RunbookName $Runbook.Name -ErrorAction SilentlyContinue
-                    $ScheduleDetails = Get-AzAutomationSchedule -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Schedule.ScheduleName -ErrorAction SilentlyContinue 
-                    if (($ScheduleDetails.WeeklyScheduleOptions.DaysOfWeek -contains 'Monday') -and ($ScheduleDetails.Frequency -eq 'week') -and ($ScheduleDetails.NextRun.TimeOfDay -eq '04:00:00')) {
-                        $ScheduleMatch = $true
-                    }
-                    else {
+            if ($AutomationRunbook) {
+                foreach ($Runbook in $AutomationRunbook) {
+                    $null = New-Item -Path "\work\marking\$($competitor.Name)" -ItemType Directory -Force -ErrorAction SilentlyContinue
+                    $null = Export-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Runbook.Name -Slot 'Published' -OutputFolder "\work\marking\$($competitor.Name)\" -Force -ErrorAction SilentlyContinue
+                    # Check if file contains string
+                    if ($(Get-Content -Path "\work\marking\$($competitor.name)\$($Runbook.Name).ps1") -like '*Remove-Item*temp*Force*') {
+                        $ContentMatch = $true
+                        $Schedule = Get-AzAutomationScheduledRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -RunbookName $Runbook.Name -ErrorAction SilentlyContinue
+                        $ScheduleDetails = Get-AzAutomationSchedule -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccountName $AutomationAccount.AutomationAccountName -Name $Schedule.ScheduleName -ErrorAction SilentlyContinue 
+                        if (($ScheduleDetails.WeeklyScheduleOptions.DaysOfWeek -contains 'Monday') -and ($ScheduleDetails.Frequency -eq 'week') -and ($ScheduleDetails.NextRun.TimeOfDay -eq '04:00:00')) {
+                            $ScheduleMatch = $true
+                        }
+                        else {
+                        }
                     }
                 }
-            }
-            if ($ContentMatch) {
-                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains *Remove-Item*temp*Force*"
-            }
-            else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - Runbook $($Runbook.Name) does not contain *Remove-Item*temp*Force*"
-            }
-            if ($ScheduleMatch) {
-                Write-Host -BackgroundColor Green "$($Competitor.Name): B3.3 - 1 - Runbook $($Runbook.Name) is scheduled to run on Mondays at 04:00"
-            }
-            else {
-                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - Runbook $($Runbook.Name) is not scheduled to run on Mondays at 04:00"
-            }
-            # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
-            # TODO Automate this
-            Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
+                if ($ContentMatch) {
+                    Write-Host -BackgroundColor Green "$($Competitor.Name): B3.2 - 1 - Runbook $($Runbook.Name) contains *Remove-Item*temp*Force*"
+                }
+                else {
+                    Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - Runbook $($Runbook.Name) does not contain *Remove-Item*temp*Force*"
+                }
+                if ($ScheduleMatch) {
+                    Write-Host -BackgroundColor Green "$($Competitor.Name): B3.3 - 1 - Runbook $($Runbook.Name) is scheduled to run on Mondays at 04:00"
+                }
+                else {
+                    Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - Runbook $($Runbook.Name) is not scheduled to run on Mondays at 04:00"
+                }
+                # B3.4 Automaatio toimii - Automaatio tekee pyydetyt asiat palvelimella 
+                # TODO Automate this
+                Write-Host -BackgroundColor Yellow "$($Competitor.Name): B3.4 -   - 1 point - CHECK AUTOMATION FUNCTIONALITY!"
 
+            }
+            else {
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No runbooks found"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No runbooks found"
+                Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No runbooks found"
+            }
         }
         else {
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No runbooks found"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No runbooks found"
-            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No runbooks found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No Automation Account found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
+            Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No Automation Account found"
         }
-    }
-    else {
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.2 - 0 - No Automation Account found"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
-        Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No Automation Account found"
     }
 
 
