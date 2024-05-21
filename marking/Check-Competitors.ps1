@@ -25,10 +25,6 @@ param (
     [string]
     $csvPath = '.\competitors.csv',
 
-    [Parameter(Mandatory = $false)]
-    [string]
-    $markingLockScriptUri = 'https://satempwebkupla.blob.core.windows.net/marking/Add-LockedFile.ps1',
-
     [Parameter(Mandatory = $true)]
     [string]
     $subscriptionId 
@@ -105,7 +101,7 @@ foreach ($competitor in $competitors) {
     # B2 Web-sivu
 
     $DNSName = "kuplakone.k$($competitor.number).kupla.eu"
-    $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue
+    $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue | Where-Object {$_.Type -eq "CNAME"}
     if ($DNSEntry) {
         $StorageAccountName = $dnsentry[0].namehost.split('.')[0]
         $StorageAccount = Get-AzStorageAccount -ResourceGroupName $($competitor.resourceGroupName) -Name $StorageAccountName -ErrorAction SilentlyContinue  
