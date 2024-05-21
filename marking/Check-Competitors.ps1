@@ -297,7 +297,7 @@ foreach ($competitor in $competitors) {
         # B6.6 Selainpohjainen chat-applikaatio käytettävissä - Chat applikaatioon pääsee sisälle
         $WebApp = Get-AzWebApp -ResourceGroupName $competitor.resourceGroupName -ErrorAction SilentlyContinue
         if ($WebApp) {
-            $WebRequest = Invoke-WebRequest -Uri "https://$($WebApp.DefaultHostName)" -ErrorAction SilentlyContinue
+            $WebRequest = Invoke-WebRequest -Uri "https://$($WebApp.DefaultHostName)" -TimeoutSec 15 -ErrorAction SilentlyContinue
         }
         else {
             $WebRequest = $null
