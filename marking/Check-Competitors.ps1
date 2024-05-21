@@ -108,10 +108,11 @@ foreach ($competitor in $competitors) {
     $DNSEntry = Resolve-DnsName $DNSName -ErrorAction SilentlyContinue
     if ($DNSEntry) {
         $StorageAccountName = $dnsentry[0].namehost.split('.')[0]
-        if ($StorageAccountName) {
+        $StorageAccount = Get-AzStorageAccount -ResourceGroupName $($competitor.resourceGroupName) -Name $StorageAccountName -ErrorAction SilentlyContinue  
+
+        if ($StorageAccount) {
             # B2.1 Staattinen web-sivu otettu käyttöön - Storage accountista enabloitu static web page
 
-            $StorageAccount = Get-AzStorageAccount -ResourceGroupName $($competitor.resourceGroupName) -Name $StorageAccountName -ErrorAction SilentlyContinue  
             $StorageProperties = Get-AzStorageServiceProperty -ServiceType blob -Context $StorageAccount.Context -ErrorAction SilentlyContinue 
 
             if ($StorageProperties.StaticWebsite.Enabled) {
