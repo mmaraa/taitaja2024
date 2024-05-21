@@ -153,13 +153,12 @@ foreach ($competitor in $competitors) {
 
     # B3.2 Scheduled task siirretty pilveen	- Sama koodi löytyy automation runbookista
     # B3.3 Ajastus konfiguroitu automaatioon kuten palvelimella	- Schedule löytyy samalla aikataulutuksella
-    $AutomationAccounts = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
+    $AutomationAccount = Get-AzAutomationAccount -ResourceGroupName $($competitor.resourceGroupName) -ErrorAction SilentlyContinue
     $ContentMatch = $false
     $ScheduleMatch = $false
 
-    foreach ($AutomationAccount in $AutomationAccounts) {
         if ($AutomationAccount) {
-            $AutomationRunbook = Get-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccount $AutomationAccount.AutomationAccountName -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'AzureAutomationTutorialWithIdentity*' -and $_.State -like 'Published' } | Select-Object Name, State
+            $AutomationRunbook = Get-AzAutomationRunbook -ResourceGroupName $($competitor.resourceGroupName) -AutomationAccount $AutomationAccount.AutomationAccountName -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'AzureAutomationTutorialWithIdentity*' } | Select-Object Name, State
 
             if ($AutomationRunbook) {
                 foreach ($Runbook in $AutomationRunbook) {
@@ -205,7 +204,6 @@ foreach ($competitor in $competitors) {
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.3 - 0 - No Automation Account found"
             Write-Host -BackgroundColor Red "$($Competitor.Name): B3.4 - 0 - No Automation Account found"
         }
-    }
 
 
     # B4 Azure valvonta
